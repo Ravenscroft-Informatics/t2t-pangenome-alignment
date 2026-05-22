@@ -14,10 +14,6 @@
 #SBATCH --output=%j.%x.out
 #SBATCH --export=ALL
 
-#source the chain file
-#wget https://hgdownload.soe.ucsc.edu/gbdb/hg38/liftOver/hg38ToGCA_009914755.4.over.chain.gz
-#gunzip hg38ToGCA_009914755.4.over.chain.gz
-
 # prepare environment
 conda activate /software/projects/pawsey0933/cfolland/miniforge3/envs/annotsv/
 module load bcftools/1.15--haf5b3da_0

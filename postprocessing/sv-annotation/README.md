@@ -4,6 +4,11 @@
 - As of Jul 2025, AnnotSV supports T2T-CHM13-based VCFs.
 - To use AnnotSV with CHM13-based VCFs, ensure the version is >3.5.
 - Once AnnotSV is installed as per the [documentation](https://github.com/lgmgeo/AnnotSV/blob/master/share/doc/AnnotSV/quickstart.md), the CHM13-based BED annotations need to be prepared via liftover. 
+    - Source the chain file:
+```
+wget https://hgdownload.soe.ucsc.edu/gbdb/hg38/liftOver/hg38ToGCA_009914755.4.over.chain.gz
+gunzip hg38ToGCA_009914755.4.over.chain.gz
+```
     - `liftover_script.sh` - adapted from script from AnnotSV [`lift_Over_a_BED_file.tcl`](https://github.com/lgmgeo/AnnotSV/blob/master/share/tcl/AnnotSV/Scripts/lift_Over_a_BED_file.tcl)
     - Use `liftover_annotsv_chm13.sh` to loop over relevent files.
 
@@ -48,6 +53,16 @@ Source of the VCF files:
 wget https://42basepairs.com/download/s3/human-pangenomics/pangenomes/scratch/2025_02_28_minigraph_cactus/hprc-v2.0-mc-chm13/hprc-v2.0-mc-chm13.wave.vcf.gz
 wget https://42basepairs.com/download/s3/human-pangenomics/pangenomes/scratch/2025_02_28_minigraph_cactus/hprc-v2.0-mc-chm13/hprc-v2.0-mc-chm13.wave.vcf.gz.tbi
 ```
-To create a BED file compatible with running SVAFotate using the VCF above, use the following script `vcf_bed.sh`. This will also normalise the chromosome prefix.
-To filter the BED file to include only SVs (>50bp), run `filter_bed.sh`
-To merge the BED files with the original SVAFotate BED file, run `merge_bed.sh`
+
+**Generate BED file for SVAFotate**
+To create a BED file compatible with running SVAFotate using the VCFs above, use the following script `vcf_bed.sh`. This will also normalise the chromosome prefix, and recompute the AF for the HGSVC data. 
+To filter the BED file to include only unique SVs (>50bp), run `filter_bed.sh`.
+To merge the BED files with the original SVAFotate BED file, run `merge_bed.sh`.
+
+## Run SVAFotate
+- First, extract out VCF file containing only the DYSGU variant calls: `extract_sv_chr.sh`. This further splits the VCF by chromosome to avoid OOM errors when running SVAFotate.
+- Run SVAFotate on each chromosome using `svafotate.sh`:
+```
+for chr in chr{1..22}; do sbatch svafotate.sh $chr ; done
+for chr in chrY chrX chrM; do sbatch svafotate.sh $chr ; done
+```
