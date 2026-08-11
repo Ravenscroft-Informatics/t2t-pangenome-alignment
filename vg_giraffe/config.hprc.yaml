@@ -1,0 +1,11 @@
+graph: 'hprc-v2.0-mc-grch38'
+ref_fa: "/software/projects/pawsey0933/manta/hprc-v2.0-mc-grch38.fa"
+seqn_prefix: "GRCh38#0#"
+gt_min_var_len: 30
+indel_realign_reads: True
+ref_paths_list: "/software/projects/pawsey0933/manta/hprc-v2.0-mc-grch38_path_lists.txt"
+segn_prefix: "GRCh38#0#"
+input_gafs:
+    D20-1067: 
+        gaf: /scratch/pawsey0933/cfolland/vg_snakemake/gaf_input/D20-1067.hprc-v2.0-mc-grch38.gaf.gz
+        gbz: /scratch/pawsey0933/cfolland/vg_snakemake/gaf_input/hprc-v2.0-mc-grch38.sample_pg.D20-1067.gbz

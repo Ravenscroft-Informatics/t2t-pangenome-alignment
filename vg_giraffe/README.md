@@ -1,0 +1,1 @@
+The files are derived from [this repository](https://github.com/vgteam/vg_snakemake) and have been edited by Claude to allow input of GAF files.
