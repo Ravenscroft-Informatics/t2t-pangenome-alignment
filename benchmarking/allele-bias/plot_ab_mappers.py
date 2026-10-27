@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/Users/00104561/miniconda3/envs/mb/bin/ python
 import argparse
 import re
 import matplotlib
@@ -7,7 +7,8 @@ from scipy import stats
 import gzip
 
 INDEL_SIZE_LIMIT = 40
-COLORS = {"bwa": "#eedd88", "giraffe": "#44bb99"}
+COLORS = {"bwa": "#DE3163", "giraffe": "#44bb99"}
+LABELS = {"bwa": "BWA-MEM", "giraffe": "VG-GIRAFFE"}
 
 def mean(x):
     return float(sum(x)) / float(len(x)) if x else 0.0
@@ -129,7 +130,7 @@ def main():
         xs = [t[0] for t in data.get(mapper, [])]
         ys = [t[1] for t in data.get(mapper, [])]
         es = [t[3] for t in data.get(mapper, [])]
-        ax.scatter(xs, ys, label=mapper, color=COLORS[mapper])
+        ax.scatter(xs, ys, label=LABELS[mapper], color=COLORS[mapper])
         ax.plot(xs, ys, color=COLORS[mapper])
         ax.errorbar(xs, ys, yerr=es, color=COLORS[mapper], linewidth=1)
 
