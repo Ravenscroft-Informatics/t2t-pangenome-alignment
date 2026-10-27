@@ -12,6 +12,9 @@ Use `call_mpileup_giraffe_bwa.sh` to:
 
 ## Plotting
 Use `plot_ab_mapers.py` to generate a plot showing the fraction of alternate alleles across reads for high-quality heterozygous variants, divided by allele length.
+```
+python plot_ab_mappers.py ./mpileup_calls/common.het.filtered.vcf.gz hg002_ab.png
+```
 
 ### Note
 DeepVariant derives the alelle depths from model-informed representations of aligned reads rather than raw pileup counts. Therefore, DeepVariant-derived allele depths reflect both mapping and model-specific filtering and interpretation of reads rather than an unbiased assessment of read counts. This is why we used `bcftools mpileup` for an unbiased assessment of allele depth.
