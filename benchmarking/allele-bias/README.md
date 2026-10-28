@@ -10,6 +10,12 @@ Use `call_mpileup_giraffe_bwa.sh` to:
 2. Merge VCFs to identify heterozygous variants common between the callsets.
 3. Filter for high quality variants (`INFO/DP>=25 && INFO/MQ>=40`).
 
+### DeepVariant
+Prepare exisitng DeepVariant callsets using `prep_dfv_calls.sh`
+```
+bash prep_dv_calls.sh hg002 $giraffe $bwa $ref ./deepvariant_pg/
+```
+
 ## Plotting
 Use `plot_ab_mapers.py` to generate a plot showing the fraction of alternate alleles across reads for high-quality heterozygous variants, divided by allele length.
 ```
