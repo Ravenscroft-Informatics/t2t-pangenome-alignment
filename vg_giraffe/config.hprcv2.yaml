@@ -1,0 +1,9 @@
+graph: 'hprc-v2.0-mc-grch38'
+gbz: "/scratch/pawsey0933/cfolland/vg_snakemake/refs/hprcv2.0/hprc-v2.0-mc-grch38.gbz"
+hapl: "/scratch/pawsey0933/cfolland/vg_snakemake/refs/hprcv2.0/hprc-v2.0-mc-grch38.hapl"
+ref_paths_list: '/scratch/pawsey0933/cfolland/vg_snakemake/config/hprc-v2.0-mc-grch38_path_lists.txt'
+seqn_prefix: "GRCh38#0#"
+gt_min_var_len: 30
+indel_realign_reads: True
+sample_tsv: "/scratch/pawsey0933/cfolland/vg_snakemake/config/samplesheet_rerun_Nov2026.tsv"
+kmc_mem_mb: 2048 #added
