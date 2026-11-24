@@ -172,9 +172,9 @@ rule surject_reads:
 
 rule surject_reads_tmp:
     input:
-        gbz="results/{sample}/{graph}.sample_pg.{sample}.gbz",
+        gbz=get_sample_gbz,
         paths_list=config['ref_paths_list'],
-        gaf="results/{sample}/{sample}.{graph}.gaf.gz",
+        gaf=get_gaf,
         ref=getref(),
         ref_idx=getrefidx()
     output: temp("results/{sample}/temp_{sample}.{graph}.surj.bam")
