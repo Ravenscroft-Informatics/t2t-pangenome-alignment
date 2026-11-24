@@ -17,7 +17,7 @@ if len(config['refsynt_fa']) > 0 and len(config['adapters_fa']) > 0 and len(conf
             echo {input.fq} > {params.filel}
             rm -rf {params.wdir}
             mkdir -p {params.wdir}
-            kmc -k29 -m{params.mem_gb} -okff -t{threads} @{params.filel} {params.ofile} {params.wdir}
+            kmc -k29 -m$(({params.mem_mb}/1024)) -okff -t{threads} @{params.filel} {params.ofile} {params.wdir}
             rm -r {params.filel} {params.wdir}
             """
 
