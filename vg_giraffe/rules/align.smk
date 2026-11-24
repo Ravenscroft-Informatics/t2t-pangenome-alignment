@@ -29,7 +29,7 @@ if len(config['refsynt_fa']) > 0 and len(config['adapters_fa']) > 0 and len(conf
             dist='results/{sample}/{graph}.sample_pg.{sample}.dist',
             min='results/{sample}/{graph}.sample_pg.{sample}.min'
         output: tempCond("results/{sample}/{sample}.{graph}.gaf.gz")
-        threads: 8
+        threads: 38
         priority: 2
         benchmark: 'benchmark/{sample}.{graph}.map_short_reads_giraffe.benchmark.tsv'
         container: docker_imgs['vg']
@@ -42,7 +42,7 @@ if len(config['refsynt_fa']) > 0 and len(config['adapters_fa']) > 0 and len(conf
             -Z {input.gbz} \
             -d {input.dist} \
             -m {input.min} \
-            -t {threads} | gzip > {output}
+            -t {threads} | pigz -p 8 > {output}
             """
 else:
     rule count_kmer_in_reads:
@@ -64,7 +64,7 @@ else:
             echo {input.fq2} >> {params.filel}
             rm -rf {params.wdir}
             mkdir -p {params.wdir}
-            kmc -k29 -m{params.mem_gb} -okff -t{threads} @{params.filel} {params.ofile} {params.wdir}
+            kmc -k29 -m$(({params.mem_mb}/1024)) -okff -t{threads} @{params.filel} {params.ofile} {params.wdir}
             rm -r {params.filel} {params.wdir}
             """
 
@@ -77,20 +77,34 @@ else:
             dist='results/{sample}/{graph}.sample_pg.{sample}.dist',
             min='results/{sample}/{graph}.sample_pg.{sample}.min'
         output: tempCond("results/{sample}/{sample}.{graph}.gaf.gz")
-        threads: 8
+        threads: 38
         priority: 2
         benchmark: 'benchmark/{sample}.{graph}.map_short_reads_giraffe.benchmark.tsv'
         container: docker_imgs['vg']
         shell:
             """
+            cp {input.gbz} /tmp
+            cp {input.dist} /tmp
+            cp {input.min} /tmp
+
             vg giraffe --progress \
             --sample "{wildcards.sample}" \
             --output-format gaf \
             -f {input.fq1} -f {input.fq2} \
-            -Z {input.gbz} \
-            -d {input.dist} \
-            -m {input.min} \
-            -t {threads} | gzip > {output}
+            -Z /tmp/$(basename {input.gbz}) \
+            -d /tmp/$(basename {input.dist}) \
+            -m /tmp/$(basename {input.min}) \
+            -t {threads} | pigz -p 16 > /tmp/{wildcards.sample}.{wildcards.graph}.gaf.gz
+
+            echo "=== giraffe done, freeing indexes from tmpfs ==="
+
+            rm -f /tmp/*.gbz /tmp/*.dist /tmp/*.min
+            ls -lh /tmp/{wildcards.sample}.{wildcards.graph}.gaf.gz
+
+            # Move result back to scratch
+            echo "=== moving output to scratch ==="
+            mv /tmp/{wildcards.sample}.{wildcards.graph}.gaf.gz results/{wildcards.sample}/{wildcards.sample}.{wildcards.graph}.gaf.gz
+
             """
     
 rule sample_haplotypes:
@@ -150,14 +164,54 @@ rule surject_reads:
         {input.gaf} | \
         python3 /opt/scripts/rename_bam_stream.py -f {input.ref_idx} -p "{params.seqn_prefix}" | \
         bamleftalign --fasta-reference {input.ref} --compressed | \
-        samtools sort -m 4G --threads {params.sort_threads} -T {params.sort_dir}/temp \
+        samtools sort -m 6G --threads {params.sort_threads} -T {params.sort_dir}/temp \
         -O BAM > {output}
 
         rm -rf {params.sort_dir}
         """
 
-use rule surject_reads as surject_reads_tmp with :
+rule surject_reads_tmp:
+    input:
+        gbz="results/{sample}/{graph}.sample_pg.{sample}.gbz",
+        paths_list=config['ref_paths_list'],
+        gaf="results/{sample}/{sample}.{graph}.gaf.gz",
+        ref=getref(),
+        ref_idx=getrefidx()
     output: temp("results/{sample}/temp_{sample}.{graph}.surj.bam")
+    priority: 3
+    params:
+        surj_threads=lambda wildcards, threads: max(1, int(threads/2)) if threads < 8 else threads - 4,
+        sort_threads=lambda wildcards, threads: max(1, int(threads/2)) if threads < 8 else min(8, max(1, threads // 8)),
+        sort_dir="temp_bam_sort_{sample}_{graph}",
+        seqn_prefix=config['seqn_prefix']
+    threads: 8
+    benchmark: 'benchmark/{sample}.{graph}.surject_reads_tmp.benchmark.tsv'
+    container: docker_imgs['vgwork']
+    shell:
+        """
+        rm -rf {params.sort_dir}
+        mkdir -p {params.sort_dir}
+
+        cp {input.paths_list} /tmp
+        cp {input.gbz} /tmp
+        cp {input.gaf} /tmp
+        cp {input.ref_idx} /tmp
+##TODO UPDATE THREADS, RESOURCES IN CONFIG LATER
+        vg surject \
+        -F /tmp/$(basename {input.paths_list}) \
+        -x /tmp/$(basename {input.gbz}) \
+        -t {params.surj_threads} \
+        --sam-output --gaf-input \
+        --sample {wildcards.sample} \
+        --read-group "ID:1 LB:lib1 SM:{wildcards.sample} PL:illumina PU:unit1" \
+        --prune-low-cplx --interleaved --max-frag-len 3000 \
+        /tmp/$(basename {input.gaf}) | \
+        python3 /opt/scripts/rename_bam_stream.py -f /tmp/$(basename {input.ref_idx}) -p "{params.seqn_prefix}" | \
+        samtools sort -m 6G --threads {params.sort_threads} -T {params.sort_dir}/temp \
+        -O BAM > {output}
+
+        rm -rf {params.sort_dir}
+        """
 
 rule prepare_target_regions:
     input: 
@@ -205,12 +259,16 @@ rule realign_bam:
     log: "logs/{sample}.{graph}.realign_bam.log"
     priority: 5
     container: docker_imgs['abra']
-    threads: 8
+    threads: 16
     shell:
         """
         rm -rf {params.tmpdir}
         mkdir -p {params.tmpdir}
-        java -Xmx26G -jar /opt/abra2/abra2.jar \
+        java -Xmx56G \
+          -Xms56G \
+          -XX:+UseG1GC \
+          -XX:ParallelGCThreads=4 \
+          -jar /opt/abra2/abra2.jar \
           --targets {input.target_bed} \
           --in {input.bam} \
           --out {output} \
