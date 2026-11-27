@@ -94,17 +94,12 @@ else:
             -Z /tmp/$(basename {input.gbz}) \
             -d /tmp/$(basename {input.dist}) \
             -m /tmp/$(basename {input.min}) \
-            -t {threads} | pigz -p 16 > /tmp/{wildcards.sample}.{wildcards.graph}.gaf.gz
+            -t {threads} | pigz -p 16 > results/{wildcards.sample}/{wildcards.sample}.{wildcards.graph}.gaf.gz
 
             echo "=== giraffe done, freeing indexes from tmpfs ==="
 
             rm -f /tmp/*.gbz /tmp/*.dist /tmp/*.min
-            ls -lh /tmp/{wildcards.sample}.{wildcards.graph}.gaf.gz
-
-            # Move result back to scratch
-            echo "=== moving output to scratch ==="
-            mv /tmp/{wildcards.sample}.{wildcards.graph}.gaf.gz results/{wildcards.sample}/{wildcards.sample}.{wildcards.graph}.gaf.gz
-
+            
             """
     
 rule sample_haplotypes:
